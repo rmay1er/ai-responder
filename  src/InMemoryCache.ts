@@ -105,9 +105,5 @@ export class InMemoryCache implements Cache {
    * @param event - The event name to listen for.
    * @param callback - A callback function that is invoked when the event occurs.
    */
-  on(event: string, callback: (error?: any) => void): void {
-    if (event === "end") {
-      callback("👋 Cache соединение закрыто");
-    }
-  }
+  on(event: string, callback: (error?: any) => void): void {}
 }
