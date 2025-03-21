@@ -2,7 +2,7 @@ import { generateText, streamText } from "ai";
 import type { Cache } from "./ src/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage, ToolResult } from "ai";
-
+import Redis from "ioredis";
 export { InMemoryCache } from "./ src/InMemoryCache";
 
 /**
@@ -18,7 +18,7 @@ interface AIResponderConfig {
   /** Cache configuration for session management */
   cache: {
     /** Cache provider instance */
-    provider: Cache;
+    provider: Cache | Redis;
     /** Expiration time in seconds for cached items */
     expireTime: number;
   };
@@ -36,7 +36,7 @@ export class AIResponder {
   private instructions: string;
   /** Cache configuration and provider */
   private cache: {
-    provider: Cache;
+    provider: Cache | Redis;
     expireTime: number;
   };
   /** Optional set of tools for the AI to use */
