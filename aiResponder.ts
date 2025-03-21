@@ -4,7 +4,6 @@ import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage, ToolResult } from "ai";
 
 export { InMemoryCache } from "./ src/InMemoryCache";
-export { Redis } from "ioredis";
 
 /**
  * Configuration interface for AIResponder
