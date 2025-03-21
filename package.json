@@ -1,0 +1,35 @@
+{
+  "name": "ai-responder",
+  "module": "aiResponder.ts",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/aiResponder.js",
+  "types": "./dist/aiResponder.d.ts",
+  "scripts": {
+    "dev": "bun run nerualBot.ts",
+    "build": "bun build ./aiResponder.ts --target bun --outdir dist --format esm --packages external  && tsc",
+    "preview": "bun run ./dist/aiResponder.js"
+  },
+  "exports": {
+    "import": "./dist/aiResponder.js",
+    "types": "./dist/aiResponder.d.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [],
+  "author": "https://github.com/rmay1er",
+  "license": "MIT",
+  "description": "AI-Agent for fast chatting",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.2.5",
+    "ai": "^4.1.61",
+    "ioredis": "^5.6.0"
+  }
+}
