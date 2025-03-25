@@ -284,7 +284,7 @@ export class AIResponder {
       if (this.cache) {
         await this.cache.provider.flushall();
         await this.cache.provider.quit();
-        this.errorHandler?.("clean", "\nCache session is cleared");
+        this.errorHandler?.("clean", "Cache session is cleared");
       }
       process.exit(0);
     };

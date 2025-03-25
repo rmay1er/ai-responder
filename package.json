@@ -1,7 +1,7 @@
 {
   "name": "ai-responder",
   "module": "aiResponder.ts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "./dist/aiResponder.js",
   "types": "./dist/aiResponder.d.ts",
