@@ -1,9 +1,9 @@
 import { generateText, streamText } from "ai";
-import type { Cache } from "./ src/InMemoryCache";
+import { InMemoryCache, type Cache } from "./src/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage, ToolResult } from "ai";
 import Redis from "ioredis";
-export { InMemoryCache } from "./ src/InMemoryCache";
+export { InMemoryCache } from "./src/InMemoryCache";
 
 /**
  * Configuration type for model
@@ -48,11 +48,11 @@ interface AIResponderConfig {
   /** Optional set of tools for the AI to use */
   tools?: ToolSet;
   /** Cache configuration for session management */
-  cache: {
+  cache?: {
     /** Cache provider instance */
     provider: Cache | Redis;
     /** Expiration time in seconds for cached items */
-    expireTime: number;
+    expireTime?: number;
   };
 }
 
@@ -67,9 +67,9 @@ export class AIResponder {
   /** System instructions for the AI model */
   private instructions: string;
   /** Cache configuration and provider */
-  private cache: {
+  private cache?: {
     provider: Cache | Redis;
-    expireTime: number;
+    expireTime?: number;
   };
   /** Optional set of tools for the AI to use */
   private tools?: ToolSet;
@@ -83,10 +83,17 @@ export class AIResponder {
   constructor(config: AIResponderConfig) {
     this.model = config.model;
     this.instructions = config.instructions;
-    this.cache = {
-      provider: config.cache.provider,
-      expireTime: config.cache.expireTime,
-    };
+    if (config.cache) {
+      this.cache = {
+        provider: config.cache.provider,
+        expireTime: config.cache.expireTime,
+      };
+    } else {
+      this.cache = {
+        provider: new InMemoryCache(),
+        expireTime: 3600,
+      };
+    }
     this.tools = config.tools;
     this.setupCleanup();
   }
@@ -99,13 +106,13 @@ export class AIResponder {
    * @returns Promise resolving to the AI response object
    * @throws Will throw an error if AI response fails
    */
-  async getContextResponse(userId: string, prompt: string): Promise<any> {
+  async getContextResponse(userId: string, prompt: string) {
     const sessionKey = `session:${userId}`;
     let messages: CoreMessage[] = [];
 
     try {
       messages = JSON.parse(
-        (await this.cache.provider.get(sessionKey)) || "[]",
+        (await this.cache!.provider.get(sessionKey)) || "[]",
       );
     } catch {
       messages = [];
@@ -132,11 +139,11 @@ export class AIResponder {
         messages = messages.slice(-10);
       }
 
-      await this.cache.provider.set(
+      await this.cache!.provider.set(
         sessionKey,
         JSON.stringify(messages),
         "EX",
-        this.cache.expireTime,
+        this.cache!.expireTime || 3600,
       );
 
       return response;
@@ -163,7 +170,7 @@ export class AIResponder {
 
     try {
       messages = JSON.parse(
-        (await this.cache.provider.get(sessionKey)) || "[]",
+        (await this.cache!.provider.get(sessionKey)) || "[]",
       );
     } catch {
       messages = [];
@@ -201,11 +208,11 @@ export class AIResponder {
         messages = messages.slice(-10);
       }
 
-      await this.cache.provider.set(
+      await this.cache!.provider.set(
         sessionKey,
         JSON.stringify(messages),
         "EX",
-        this.cache.expireTime,
+        this.cache!.expireTime || 3600,
       );
 
       return { text: fullResponse };
