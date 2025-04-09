@@ -129,7 +129,7 @@ export class AIResponder {
     messages.push({ role: "user", content: prompt });
 
     try {
-      const { response, text, toolCalls, toolResults } = await generateText({
+      const { response, text, steps } = await generateText({
         model: openai(this.model),
         system: this.instructions,
         tools: this.tools,
@@ -150,7 +150,7 @@ export class AIResponder {
         this.cache!.expireTime || 3600,
       );
 
-      return { text, toolCalls, toolResults };
+      return { text, steps };
     } catch (error) {
       this.errorHandler?.("error", `Failed to get response from AI`);
       throw error;
