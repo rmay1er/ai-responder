@@ -54,6 +54,7 @@ interface AIResponderConfig {
     /** Expiration time in seconds for cached items */
     expireTime?: number;
   };
+  lengthOfContext?: number;
 }
 
 /**
@@ -73,6 +74,8 @@ export class AIResponder {
   };
   /** Optional set of tools for the AI to use */
   private tools?: ToolSet;
+  /** Optional number of messages in AI context */
+  private lengthOfContext?: number;
   /** Universal error handler for various system events */
   private errorHandler?: (type: string, data: any) => void;
 
@@ -93,6 +96,11 @@ export class AIResponder {
         provider: new InMemoryCache(),
         expireTime: 3600,
       };
+    }
+    if (config.lengthOfContext) {
+      this.lengthOfContext = config.lengthOfContext;
+    } else {
+      this.lengthOfContext = 10;
     }
     this.tools = config.tools;
     this.setupCleanup();
@@ -126,14 +134,13 @@ export class AIResponder {
         system: this.instructions,
         tools: this.tools,
         messages,
-        maxTokens: 500,
-        maxSteps: 4,
+        maxTokens: 600,
+        maxSteps: 10,
       });
 
       messages.push(...response.messages);
-
-      if (messages.length > 10) {
-        messages = messages.slice(-10);
+      if (messages.length > (this.lengthOfContext ?? 10)) {
+        messages = messages.slice(-(this.lengthOfContext ?? 10));
       }
 
       await this.cache!.provider.set(
