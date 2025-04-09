@@ -138,10 +138,14 @@ export class AIResponder {
         maxSteps: 10,
       });
 
+      // Добавляем ВСЕ сообщения из ответа (включая tool)
       messages.push(...response.messages);
-      if (messages.length > (this.lengthOfContext ?? 10)) {
-        messages = messages.slice(-(this.lengthOfContext ?? 10));
-      }
+
+      // Безопасная обрезка с сохранением tool-пар
+      messages = this.trimMessagesKeepingTools(
+        messages,
+        this.lengthOfContext ?? 10,
+      );
 
       await this.cache!.provider.set(
         sessionKey,
@@ -155,6 +159,33 @@ export class AIResponder {
       this.errorHandler?.("error", `Failed to get response from AI`);
       throw error;
     }
+  }
+
+  private trimMessagesKeepingTools(
+    messages: CoreMessage[],
+    maxLength: number,
+  ): CoreMessage[] {
+    if (messages.length <= maxLength) return messages;
+
+    // Ищем индексы всех пар assistant → tool
+    const toolPairs: number[] = [];
+    for (let i = 1; i < messages.length; i++) {
+      if (messages[i].role === "tool" && messages[i - 1].role === "assistant") {
+        toolPairs.push(i - 1, i); // Сохраняем индексы assistant и tool
+      }
+    }
+
+    // Обрезаем, но не разрываем пары
+    let startIndex = messages.length - maxLength;
+    for (const pairStart of toolPairs) {
+      if (pairStart < startIndex && pairStart + 1 >= startIndex) {
+        // Если обрезка разорвёт пару, начинаем раньше
+        startIndex = pairStart;
+        break;
+      }
+    }
+
+    return messages.slice(startIndex);
   }
 
   /**
