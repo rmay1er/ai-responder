@@ -10,6 +10,9 @@
     "build": "tsc",
     "preview": "bun run ./dist/aiResponder.js"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [],
   "author": "https://github.com/rmay1er",
   "license": "MIT",
