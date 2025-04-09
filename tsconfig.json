@@ -9,11 +9,9 @@
     "allowJs": true,
     "declaration": true,
     "outDir": "dist",
-    "emitDeclarationOnly": true,
 
     // Bundler mode
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
 
     // Best practices
@@ -25,5 +23,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  "exclude": ["./_.test.ts"]
 }

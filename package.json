@@ -1,22 +1,15 @@
 {
   "name": "ai-responder",
   "module": "aiResponder.ts",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "main": "./dist/aiResponder.js",
   "types": "./dist/aiResponder.d.ts",
   "scripts": {
     "dev": "bun run nerualBot.ts",
-    "build": "bun build ./aiResponder.ts --target bun --outdir dist --format esm --packages external  && tsc",
+    "build": "tsc",
     "preview": "bun run ./dist/aiResponder.js"
   },
-  "exports": {
-    "import": "./dist/aiResponder.js",
-    "types": "./dist/aiResponder.d.ts"
-  },
-  "files": [
-    "dist"
-  ],
   "keywords": [],
   "author": "https://github.com/rmay1er",
   "license": "MIT",
