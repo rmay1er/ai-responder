@@ -169,7 +169,7 @@ export class AIResponder {
 
     // Ищем индексы всех пар assistant → tool
     const toolPairs: number[] = [];
-    for (let i = 2; i < messages.length; i++) {
+    for (let i = 1; i < messages.length; i++) {
       if (messages[i].role === "tool" && messages[i - 1].role === "assistant") {
         toolPairs.push(i - 1, i); // Сохраняем индексы assistant и tool
       }
