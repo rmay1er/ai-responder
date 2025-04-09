@@ -134,7 +134,7 @@ export class AIResponder {
         system: this.instructions,
         tools: this.tools,
         messages,
-        maxTokens: 600,
+        maxTokens: 500,
         maxSteps: 10,
       });
 
@@ -144,7 +144,7 @@ export class AIResponder {
       // Безопасная обрезка с сохранением tool-пар
       messages = this.trimMessagesKeepingTools(
         messages,
-        this.lengthOfContext ?? 10,
+        this.lengthOfContext ?? 15,
       );
 
       await this.cache!.provider.set(
