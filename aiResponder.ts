@@ -1,7 +1,7 @@
 import { generateText, streamText } from "ai";
 import { InMemoryCache, type Cache } from "./src/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
-import type { ToolSet, CoreMessage, ToolResult } from "ai";
+import type { ToolSet, CoreMessage } from "ai";
 import Redis from "ioredis";
 export { InMemoryCache } from "./src/InMemoryCache";
 
@@ -129,7 +129,7 @@ export class AIResponder {
     messages.push({ role: "user", content: prompt });
 
     try {
-      const { response, text, steps } = await generateText({
+      const response = await generateText({
         model: openai(this.model),
         system: this.instructions,
         tools: this.tools,
@@ -139,12 +139,12 @@ export class AIResponder {
       });
 
       // Добавляем ВСЕ сообщения из ответа (включая tool)
-      messages.push(...response.messages);
+      messages.push(...response.response.messages);
 
       // Безопасная обрезка с сохранением tool-пар
-      messages = this.trimMessagesKeepingTools(
+      messages = this.trimMessagesToolsPairsSafety(
         messages,
-        this.lengthOfContext ?? 15,
+        this.lengthOfContext ?? 10,
       );
 
       await this.cache!.provider.set(
@@ -154,14 +154,21 @@ export class AIResponder {
         this.cache!.expireTime || 3600,
       );
 
-      return { text, steps };
+      return response;
     } catch (error) {
       this.errorHandler?.("error", `Failed to get response from AI`);
       throw error;
     }
   }
 
-  private trimMessagesKeepingTools(
+  /**
+   * Safely trims message history while preserving assistant-tool message pairs.
+   * Ensures tool responses are not separated from their corresponding assistant messages.
+   * @param messages - Array of CoreMessage objects representing the conversation history
+   * @param maxLength - Maximum number of messages to retain in the history
+   * @returns Trimmed array of CoreMessage objects with preserved tool pairs
+   */
+  private trimMessagesToolsPairsSafety(
     messages: CoreMessage[],
     maxLength: number,
   ): CoreMessage[] {
@@ -186,102 +193,6 @@ export class AIResponder {
     }
 
     return messages.slice(startIndex);
-  }
-
-  /**
-   * Gets a streamed context-based response from the AI model.
-   * Provides real-time streaming of the AI response while maintaining session context.
-   * @param userId - Unique identifier for the user session
-   * @param prompt - User's input prompt
-   * @returns Promise resolving to an object containing the full response text
-   * @throws Will throw an error if streaming fails
-   */
-  async getStreamedContextResponse(
-    userId: string,
-    prompt: string,
-  ): Promise<any> {
-    const sessionKey = `session:${userId}`;
-    let messages: CoreMessage[] = [];
-
-    try {
-      messages = JSON.parse(
-        (await this.cache!.provider.get(sessionKey)) || "[]",
-      );
-    } catch {
-      messages = [];
-    }
-
-    messages.push({ role: "user", content: prompt });
-
-    try {
-      const response = streamText({
-        model: openai(this.model),
-        system: this.instructions,
-        tools: this.tools,
-        messages,
-        maxTokens: 500,
-        maxSteps: 4,
-      });
-
-      let fullResponse = "";
-      const reader = response.textStream.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        fullResponse += value;
-        Bun.stdout.write(value);
-      }
-
-      messages.push({
-        role: "assistant",
-        content: fullResponse,
-      });
-
-      if (messages.length > 10) {
-        messages = messages.slice(-10);
-      }
-
-      await this.cache!.provider.set(
-        sessionKey,
-        JSON.stringify(messages),
-        "EX",
-        this.cache!.expireTime || 3600,
-      );
-
-      return { text: fullResponse };
-    } catch (error) {
-      this.errorHandler?.("error", `Failed to get response from AI`);
-      throw error;
-    }
-  }
-
-  /**
-   * Formats tool responses into a readable string.
-   * @param response - The response object containing tool results
-   * @returns Formatted string showing tool arguments and results, or undefined if no tool results
-   */
-  formatToolResponse(response: {
-    steps?: Array<{ toolResults?: Array<ToolResult<string, any, any>> }>;
-  }): string | undefined {
-    const toolResponse = response.steps?.[0]?.toolResults?.map((result) => ({
-      args: result.args as any,
-      result: result.result,
-    }));
-
-    if (toolResponse && toolResponse.length > 0) {
-      return toolResponse
-        .map(
-          ({ args, result }) =>
-            `Tool args: ${JSON.stringify(args)} | Tool result: ${JSON.stringify(
-              result,
-              null,
-              2,
-            )}`,
-        )
-        .join("\n");
-    }
   }
 
   /**
