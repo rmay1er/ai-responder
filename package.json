@@ -6,8 +6,7 @@
   "main": "./dist/aiResponder.js",
   "types": "./dist/aiResponder.d.ts",
   "scripts": {
-    "dev": "bun run nerualBot.ts",
-    "build": "tsc",
+    "build": "rm -rf dist && tsc && bun run build.ts",
     "preview": "bun run ./dist/aiResponder.js"
   },
   "files": [
