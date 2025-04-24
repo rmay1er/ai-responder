@@ -2,7 +2,7 @@ const startTime = Date.now();
 console.log(`Building...`);
 
 await Bun.build({
-  entrypoints: ["./aiResponder.ts"],
+  entrypoints: ["./main.ts"],
   target: "bun",
   outdir: "./dist",
   packages: "external",

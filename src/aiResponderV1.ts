@@ -1,46 +1,14 @@
-import { generateText, streamText } from "ai";
-import { InMemoryCache, type Cache } from "./src/InMemoryCache";
+import { generateText } from "ai";
+import { InMemoryCache, type Cache } from "./cache/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage } from "ai";
+import type { OpenAIResponsesModelId } from "./types/OpenAIResponsesModelId";
 import Redis from "ioredis";
-export { InMemoryCache } from "./src/InMemoryCache";
-
-/**
- * Configuration type for model
- */
-type OpenAIResponsesModelId =
-  | "o1"
-  | "o1-2024-12-17"
-  | "o1-mini"
-  | "o1-mini-2024-09-12"
-  | "o1-preview"
-  | "o1-preview-2024-09-12"
-  | "o3-mini"
-  | "o3-mini-2025-01-31"
-  | "gpt-4o"
-  | "gpt-4o-2024-05-13"
-  | "gpt-4o-2024-08-06"
-  | "gpt-4o-2024-11-20"
-  | "gpt-4o-mini"
-  | "gpt-4o-mini-2024-07-18"
-  | "gpt-4-turbo"
-  | "gpt-4-turbo-2024-04-09"
-  | "gpt-4-turbo-preview"
-  | "gpt-4-0125-preview"
-  | "gpt-4-1106-preview"
-  | "gpt-4"
-  | "gpt-4-0613"
-  | "gpt-4.5-preview"
-  | "gpt-4.5-preview-2025-02-27"
-  | "gpt-3.5-turbo-0125"
-  | "gpt-3.5-turbo"
-  | "gpt-3.5-turbo-1106"
-  | (string & {});
 
 /**
  * Configuration interface for AIResponder
  */
-interface AIResponderConfig {
+export interface AIResponderConfig {
   /** The AI model identifier to use for responses */
   model: OpenAIResponsesModelId;
   /** System instructions for the AI model */
@@ -54,7 +22,12 @@ interface AIResponderConfig {
     /** Expiration time in seconds for cached items */
     expireTime?: number;
   };
+  /** Optional number of messages in AI context */
   lengthOfContext?: number;
+  /** Optional maximum number of tokens to generate in a response */
+  maxTokens?: number;
+  /** Optional maximum number of steps to take in a response */
+  maxSteps?: number;
 }
 
 /**
@@ -62,47 +35,55 @@ interface AIResponderConfig {
  * Provides methods for generating both standard and streamed responses,
  * with built-in session management and tool response formatting.
  */
-export class AIResponder {
+export class AIResponderV1 {
   /** The AI model identifier being used */
-  public model: string;
+  public model: OpenAIResponsesModelId;
   /** System instructions for the AI model */
-  private instructions: string;
+  protected instructions: string;
   /** Cache configuration and provider */
-  private cache?: {
+  protected cache?: {
     provider: Cache | Redis;
     expireTime?: number;
   };
   /** Optional set of tools for the AI to use */
-  private tools?: ToolSet;
+  protected tools?: ToolSet;
   /** Optional number of messages in AI context */
-  private lengthOfContext?: number;
+  protected lengthOfContext?: number;
+
+  /** Maximum number of tokens to generate */
+  protected maxTokens?: number;
+
+  /** Maximum number of steps to generate */
+  protected maxSteps?: number;
+
   /** Universal error handler for various system events */
-  private errorHandler?: (type: string, data: any) => void;
+  protected errorHandler?: (type: string, data: any) => void;
 
   /**
    * Creates an instance of AIResponder
    * @param config - Configuration object for the responder
    */
   constructor(config: AIResponderConfig) {
-    this.model = config.model;
-    this.instructions = config.instructions;
-    if (config.cache) {
-      this.cache = {
-        provider: config.cache.provider,
-        expireTime: config.cache.expireTime,
-      };
-    } else {
-      this.cache = {
-        provider: new InMemoryCache(),
-        expireTime: 3600,
-      };
-    }
-    if (config.lengthOfContext) {
-      this.lengthOfContext = config.lengthOfContext;
-    } else {
-      this.lengthOfContext = 10;
-    }
-    this.tools = config.tools;
+    const {
+      model,
+      instructions,
+      cache,
+      lengthOfContext,
+      tools,
+      maxTokens,
+      maxSteps,
+    } = config;
+
+    this.model = model;
+    this.instructions = instructions;
+    this.cache = cache ?? {
+      provider: new InMemoryCache(),
+      expireTime: 3600,
+    };
+    this.lengthOfContext = lengthOfContext || 10;
+    this.tools = tools;
+    this.maxTokens = maxTokens || 500;
+    this.maxSteps = maxSteps || 5;
     this.setupCleanup();
   }
 
@@ -134,8 +115,8 @@ export class AIResponder {
         system: this.instructions,
         tools: this.tools,
         messages,
-        maxTokens: 500,
-        maxSteps: 10,
+        maxTokens: this.maxTokens,
+        maxSteps: this.maxSteps,
       });
 
       // Добавляем ВСЕ сообщения из ответа (включая tool)
@@ -151,7 +132,7 @@ export class AIResponder {
         sessionKey,
         JSON.stringify(messages),
         "EX",
-        this.cache!.expireTime || 3600,
+        this.cache?.expireTime || 3600,
       );
 
       return response;

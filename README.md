@@ -1,163 +1,163 @@
 # AI Responder Library
 
-The AI Responder library is a powerful TypeScript-based solution for managing AI-powered conversations with built-in session management, caching, and error handling. It provides a structured way to interact with AI models while maintaining conversation context and handling various system events.
+**Build Production-Ready AI Agents in Minutes**
+⚡ Zero-config TypeScript library with enterprise-grade conversation management
 
-## Features
+## Why Choose This Library?
 
-- **Contextual Conversations**: Maintains conversation context using session-based caching
-- **Streaming Support**: Provides real-time streaming of AI responses
-- **Tool Integration**: Supports custom tools for extended functionality
-- **Error Handling**: Comprehensive error handling and system event management
-- **Cache Management**: Built-in caching with expiration and cleanup
-- **Session Management**: Automatic session trimming and expiration
+- 🚀 **3-Line Agent Setup** - From zero to AI in 30 seconds
+- 🔐 **Secure API Handling** - Automatic environment variable integration
+- 🧩 **Context-Aware Dialog** - Smart history management out-of-the-box
+- 🛡️ **Battle-Tested** - Built-in error recovery & Redis caching
+- 📦 **MIT Licensed** - Free for commercial use and customization
 
-## Installation
+## Quick Start
 
-Install the package using npm:
-
+### 1. Install Package
 ```bash
+# Using Bun
 bun install ai-responder
+
+# Using npm
+npm install ai-responder
 ```
 
-## Usage
+### 2. Configure Environment
+```bash
+# .env
+OPENAI_API_KEY=your-key-here
+```
 
-### Basic Setup
+### 3. Create First Agent
+```typescript
+import { AIResponderV1 } from 'ai-responder';
+import 'dotenv/config'; // Node.js only - Bun auto-loads .env
+
+const supportBot = new AIResponderV1({
+  model: 'gpt-4o', // Official OpenAI model ID
+  instructions: 'Friendly customer support assistant'
+});
+
+// Start conversing!
+const response = await supportBot.getContextResponse('user-789', 'Hi!');
+console.log(response.text); // → "Hello! How can I assist you today?"
+```
+
+## Configuration Guide
 
 ```typescript
-import { AIResponder } from 'ai-responder';
-import { InMemoryCache } from 'ai-responder';
+// Optimal production configuration
+const agentConfig = {
+  // REQUIRED CORE SETTINGS
+  model: 'gpt-4-turbo', // OpenAI model ID
+  instructions: 'Expert financial advisor', // Agent personality
 
-const responder = new AIResponder({
+  // OPTIONAL OPTIMIZATIONS
+  lengthOfContext: 20,    // Messages to retain (V1 only)
+  maxTokens: 750,         // Prevent verbose responses
+  maxSteps: 4,            // Control reasoning depth
+  cache: {                // Redis recommended for production
+    provider: new Redis({ host: 'redis.prod' }),
+    expireTime: 3600      // Session TTL in seconds
+  }
+};
+```
+
+### Configuration Reference
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| **model** | OpenAI model version | *Required* |
+| **instructions** | Agent behavior blueprint | *Required* |
+| **lengthOfContext** | Historical message limit (V1) | `10` |
+| **maxTokens** | Response length limiter | `500` |
+| **maxSteps** | Reasoning complexity cap | `5` |
+| **cache** | Session storage solution | In-memory |
+
+## Key Features
+
+### Enterprise-Grade Security
+```typescript
+// Automatic .env handling
+const secureAgent = new AIResponderV1({
   model: 'gpt-4',
-  instructions: 'You are a helpful assistant.',
-  cache: {
-    provider: new InMemoryCache(),
-    expireTime: 3600, // 1 hour
-  },
+  instructions: 'PCI-compliant payment assistant'
 });
 ```
 
-### Getting a Contextual Response
-
+### Intelligent Caching
 ```typescript
-const response = await responder.getContextResponse('user-123', 'Hello!');
-console.log(response.text);
-```
+// Zero-config in-memory cache
+const devAgent = new AIResponderV1({/* config */});
 
-### Streaming a Response
-
-```typescript
-const streamResponse = await responder.getStreamedContextResponse('user-123', 'Tell me a story');
-console.log(streamResponse.text);
-```
-
-### Error Handling
-
-```typescript
-responder.catchErrors((type, data) => {
-  switch (type) {
-    case 'error':
-      console.error('Error:', data);
-      break;
-    case 'connect':
-      console.log(data);
-      break;
-    // Handle other event types
+// Production Redis integration
+import Redis from 'ioredis';
+const prodAgent = new AIResponderV1({
+  cache: {
+    provider: new Redis(), // Cluster-ready
+    expireTime: 7200 // 2-hour sessions
   }
 });
 ```
 
-## API Reference
+## Version Comparison
 
-### `AIResponder(config: AIResponderConfig)`
-
-Main class for handling AI responses.
-
-#### Configuration Options
-
-- `model`: The AI model identifier to use
-- `instructions`: System instructions for the AI
-- `tools`: Optional set of tools for the AI to use
-- `cache`: Cache configuration
-  - `provider`: Cache provider instance
-  - `expireTime`: Cache expiration time in seconds
-
-### Methods
-
-#### `getContextResponse(userId: string, prompt: string): Promise<any>`
-
-Gets a context-based response from the AI model.
-
-- `userId`: Unique identifier for the user session
-- `prompt`: User's input prompt
-
-#### `getStreamedContextResponse(userId: string, prompt: string): Promise<any>`
-
-Gets a streamed context-based response from the AI model.
-
-#### `formatToolResponse(response): string | undefined`
-
-Formats tool responses into a readable string.
-
-#### `catchErrors(handler: (type: string, data: any) => void): void`
-
-Sets up a universal error handler for the responder.
-
-## Cache Providers
-
-The library supports multiple cache providers:
-
-- `InMemoryCache`: Built-in in-memory cache
-- `Redis`: Use with ioredis package
+| Feature | V1 (Context Master) | V2 (Speed Focused) |
+|---------|----------------------|---------------------|
+| **Storage** | Full conversation history | Response IDs only |
+| **Memory Use** | Higher | Minimal |
+| **Best For** | Complex workflows | High-throughput APIs |
+| **Setup** | Automatic | Automatic |
 
 ```typescript
-import { Redis } from 'ioredis';
-
-const redisCache = new Redis();
-const responder = new AIResponder({
-  // ... other config
-  cache: {
-    provider: redisCache,
-    expireTime: 3600,
-  },
+// V2 Lightning Example
+const fastAgent = new AIResponderV2({
+  model: 'gpt-4-turbo',
+  instructions: 'High-speed query resolver'
 });
 ```
 
-## Error Handling Events
+## Production Essentials
 
-The error handler can receive the following event types:
+### Real-Time Monitoring
+```typescript
+agent.catchErrors((eventType, details) => {
+  if (eventType === 'error') {
+    logToSentry(details);
+  }
+});
+```
 
-- `error`: General errors
-- `connect`: Cache connection established
-- `reconnecting`: Cache reconnecting
-- `end`: Cache connection closed
-- `clean`: Cache cleanup complete
+### Horizontal Scaling
+```typescript
+import Redis from 'ioredis';
 
-## Best Practices
-
-1. Use unique user IDs for session management
-2. Set appropriate cache expiration times based on your application needs
-3. Implement proper error handling using `catchErrors`
-4. Monitor cache connection states
-5. Use streaming for long-running responses
+const clusterAgent = new AIResponderV1({
+  cache: {
+    provider: new Redis({
+      host: 'redis-cluster',
+      tls: { /* TLS config */ }
+    }),
+    expireTime: 86400 // 24h retention
+  }
+});
+```
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+We welcome community contributions! Here's how to help:
 
-1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Submit a pull request
+1. 🐛 **Report Issues** - Open GitHub tickets for bugs
+2. 💡 **Suggest Features** - Propose enhancements via Discussions
+3. 👩💻 **Submit PRs** - Follow these steps:
+   - Fork repository
+   - Create feature branch (`feat/your-feature`)
+   - Add tests for new functionality
+   - Submit pull request with documentation updates
 
-## License
-
-MIT License
-
-## Support
-
-For support, please open an issue on the GitHub repository.
+**Pro Tip:** Discuss major changes via Issues before coding!
 
 ---
 
-This library provides a robust foundation for building AI-powered conversational interfaces with proper session management and error handling. It's designed to be flexible and extensible while maintaining a simple API surface.
+**Start Building AI Solutions Today**
+📄 [MIT License](LICENSE) • 🔧 Extensible Architecture • 🚀 Enterprise-Ready Foundation

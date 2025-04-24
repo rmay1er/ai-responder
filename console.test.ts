@@ -1,13 +1,17 @@
-import { AIResponder, InMemoryCache } from "./dist/aiResponder";
+import { AIResponderV2 } from "./dist/main";
 
-const aiModule = new AIResponder({
-  model: "gpt-4o",
-  instructions: "You are a helpful assistant.",
+const instructions = await Bun.file("./ins.json").json();
+
+const aiModule = new AIResponderV2({
+  model: "gpt-4o-mini",
+  instructions: instructions.system,
 });
 
-const response = await aiModule.getContextResponse(
-  "console_session",
-  "Say to user, that program is running and AI is ready to assist you.",
-);
+console.log("You: ");
 
-console.log(response.text);
+for await (let line of console) {
+  const response = await aiModule.getContextResponse("console_session", line);
+  console.log(response.text);
+  // console.log(JSON.stringify(response, null, 2));
+  console.write("You: ");
+}
