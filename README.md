@@ -38,9 +38,13 @@ const supportBot = new AIResponderV1({
   instructions: 'Friendly customer support assistant'
 });
 
-// Start conversing!
+// Start conversing with context
 const response = await supportBot.getContextResponse('user-789', 'Hi!');
 console.log(response.text); // → "Hello! How can I assist you today?"
+
+// Or make a one-time request without memory
+const oneTimeResponse = await supportBot.getOnceResponse('What's the weather today?');
+console.log(oneTimeResponse.text);
 ```
 
 ## Configuration Guide

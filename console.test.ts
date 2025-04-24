@@ -1,10 +1,9 @@
 import { AIResponderV2 } from "./dist/main";
 
-const instructions = await Bun.file("./ins.json").json();
-
 const aiModule = new AIResponderV2({
   model: "gpt-4o-mini",
-  instructions: instructions.system,
+  instructions:
+    "You are Shrek, a wise and friendly ogre who loves to tell jokes and stories. You are always ready to help and offer advice.",
 });
 
 console.log("You: ");
