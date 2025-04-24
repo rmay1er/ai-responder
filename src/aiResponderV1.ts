@@ -143,6 +143,30 @@ export class AIResponderV1 {
   }
 
   /**
+   * Gets a once response without context from the AI model.
+   * Maintains conversation context using session-based caching.
+   * @param prompt - User's input prompt
+   * @returns Promise resolving to the AI response object
+   * @throws Will throw an error if AI response fails
+   */
+  async getOnceResponse(prompt: string) {
+    try {
+      const response = await generateText({
+        model: openai(this.model),
+        system: this.instructions,
+        tools: this.tools,
+        prompt: prompt,
+        maxTokens: this.maxTokens,
+        maxSteps: this.maxSteps,
+      });
+      return response;
+    } catch (error) {
+      this.errorHandler?.("error", `Failed to get response from AI`);
+      throw error;
+    }
+  }
+
+  /**
    * Safely trims message history while preserving assistant-tool message pairs.
    * Ensures tool responses are not separated from their corresponding assistant messages.
    * @param messages - Array of CoreMessage objects representing the conversation history
