@@ -1,9 +1,10 @@
-import { generateText } from "ai";
+import { generateText, generateObject } from "ai";
 import { InMemoryCache, type Cache } from "./cache/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage } from "ai";
 import type { OpenAIResponsesModelId } from "./types/OpenAIResponsesModelId";
 import Redis from "ioredis";
+import type { ZodType, ZodTypeDef } from "zod";
 
 /**
  * Configuration interface for AIResponder
@@ -28,6 +29,12 @@ export interface AIResponderConfig {
   maxTokens?: number;
   /** Optional maximum number of steps to take in a response */
   maxSteps?: number;
+  /** Schema of the object that the model should generate */
+  schema?: ZodType<unknown, ZodTypeDef, unknown>;
+  /** Optional schema name */
+  schemaName?: string;
+  /** Description of the schema */
+  schemaDescription?: string;
 }
 
 /**
@@ -49,13 +56,16 @@ export class AIResponderV1 {
   protected tools?: ToolSet;
   /** Optional number of messages in AI context */
   protected lengthOfContext?: number;
-
+  /** Schema for structured object generation */
+  protected schema?: ZodType<unknown, ZodTypeDef, unknown>;
+  /** Optional schema name */
+  protected schemaName?: string;
+  /** Optional schema description */
+  protected schemaDescription?: string;
   /** Maximum number of tokens to generate */
   protected maxTokens?: number;
-
   /** Maximum number of steps to generate */
   protected maxSteps?: number;
-
   /** Universal error handler for various system events */
   protected errorHandler?: (type: string, data: any) => void;
 
@@ -72,6 +82,9 @@ export class AIResponderV1 {
       tools,
       maxTokens,
       maxSteps,
+      schema,
+      schemaName,
+      schemaDescription,
     } = config;
 
     this.model = model;
@@ -84,6 +97,9 @@ export class AIResponderV1 {
     this.tools = tools;
     this.maxTokens = maxTokens || 500;
     this.maxSteps = maxSteps || 5;
+    this.schema = schema;
+    this.schemaName = schemaName;
+    this.schemaDescription = schemaDescription;
     this.setupCleanup();
   }
 
@@ -159,6 +175,59 @@ export class AIResponderV1 {
         maxTokens: this.maxTokens,
         maxSteps: this.maxSteps,
       });
+      return response;
+    } catch (error) {
+      this.errorHandler?.("error", `Failed to get response from AI`);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets an object response from the AI model.
+   * Maintains conversation context using session-based caching.
+   * @param userId - User's ID to save session data
+   * @param prompt - User's input prompt
+   * @returns Promise resolving to the AI response object
+   * @throws Will throw an error if AI response fails
+   */
+  async getStructuredObject(userId: string, prompt: string) {
+    const sessionKey = `session:${userId}`;
+    let messages: CoreMessage[] = [];
+
+    try {
+      messages = JSON.parse(
+        (await this.cache!.provider.get(sessionKey)) || "[]",
+      );
+    } catch {
+      messages = [];
+    }
+
+    messages.push({ role: "user", content: prompt });
+
+    try {
+      const response = await generateObject({
+        model: openai(this.model),
+        messages,
+        schemaName: this.schemaName,
+        schemaDescription: this.schemaDescription,
+        schema: this.schema as any, // Cast to any to bypass type checking
+      });
+
+      messages.push({ role: "assistant", content: String(response.object) });
+
+      // Безопасная обрезка с сохранением tool-пар
+      messages = this.trimMessagesToolsPairsSafety(
+        messages,
+        this.lengthOfContext ?? 10,
+      );
+
+      await this.cache!.provider.set(
+        sessionKey,
+        JSON.stringify(messages),
+        "EX",
+        this.cache?.expireTime || 3600,
+      );
+
       return response;
     } catch (error) {
       this.errorHandler?.("error", `Failed to get response from AI`);
