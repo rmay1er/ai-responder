@@ -207,7 +207,10 @@ export class AIResponderV1 {
     try {
       const response = await generateObject({
         model: openai(this.model),
+        system: this.instructions,
         messages,
+        maxTokens: this.maxTokens,
+        maxRetries: 3,
         schemaName: this.schemaName,
         schemaDescription: this.schemaDescription,
         schema: this.schema as any, // Cast to any to bypass type checking
