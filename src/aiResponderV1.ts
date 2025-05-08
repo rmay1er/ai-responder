@@ -35,6 +35,7 @@ export interface AIResponderConfig {
   schemaName?: string;
   /** Description of the schema */
   schemaDescription?: string;
+  temperature?: number;
 }
 
 /**
@@ -66,6 +67,8 @@ export class AIResponderV1 {
   protected maxTokens?: number;
   /** Maximum number of steps to generate */
   protected maxSteps?: number;
+  /** Randomise answer of AI */
+  protected temperature?: number;
   /** Universal error handler for various system events */
   protected errorHandler?: (type: string, data: any) => void;
 
@@ -85,6 +88,7 @@ export class AIResponderV1 {
       schema,
       schemaName,
       schemaDescription,
+      temperature,
     } = config;
 
     this.model = model;
@@ -100,6 +104,7 @@ export class AIResponderV1 {
     this.schema = schema;
     this.schemaName = schemaName;
     this.schemaDescription = schemaDescription;
+    this.temperature = temperature;
     this.setupCleanup();
   }
 
@@ -133,6 +138,7 @@ export class AIResponderV1 {
         messages,
         maxTokens: this.maxTokens,
         maxSteps: this.maxSteps,
+        temperature: this.temperature,
       });
 
       // Добавляем ВСЕ сообщения из ответа (включая tool)
@@ -174,6 +180,7 @@ export class AIResponderV1 {
         prompt: prompt,
         maxTokens: this.maxTokens,
         maxSteps: this.maxSteps,
+        temperature: this.temperature,
       });
       return response;
     } catch (error) {
@@ -210,13 +217,16 @@ export class AIResponderV1 {
         system: this.instructions,
         messages,
         maxTokens: this.maxTokens,
-        maxRetries: 3,
         schemaName: this.schemaName,
         schemaDescription: this.schemaDescription,
         schema: this.schema as any, // Cast to any to bypass type checking
+        temperature: this.temperature,
       });
 
-      messages.push({ role: "assistant", content: String(response.object) });
+      messages.push({
+        role: "assistant",
+        content: JSON.stringify(response.object),
+      });
 
       // Безопасная обрезка с сохранением tool-пар
       messages = this.trimMessagesToolsPairsSafety(
