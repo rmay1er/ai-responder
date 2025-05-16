@@ -2,7 +2,7 @@ import { generateText, generateObject } from "ai";
 import { InMemoryCache, type Cache } from "./cache/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage } from "ai";
-import type { OpenAIResponsesModelId } from "./types/OpenAIResponsesModelId";
+import type { OpenAIChatModelId } from "./types/OpenAIResponsesModelId";
 import Redis from "ioredis";
 import type { ZodType, ZodTypeDef } from "zod";
 
@@ -11,7 +11,7 @@ import type { ZodType, ZodTypeDef } from "zod";
  */
 export interface AIResponderConfig {
   /** The AI model identifier to use for responses */
-  model: OpenAIResponsesModelId;
+  model: OpenAIChatModelId;
   /** System instructions for the AI model */
   instructions: string;
   /** Optional set of tools for the AI to use */
@@ -45,7 +45,7 @@ export interface AIResponderConfig {
  */
 export class AIResponderV1 {
   /** The AI model identifier being used */
-  public model: OpenAIResponsesModelId;
+  public model: OpenAIChatModelId;
   /** System instructions for the AI model */
   protected instructions: string;
   /** Cache configuration and provider */
@@ -77,34 +77,20 @@ export class AIResponderV1 {
    * @param config - Configuration object for the responder
    */
   constructor(config: AIResponderConfig) {
-    const {
-      model,
-      instructions,
-      cache,
-      lengthOfContext,
-      tools,
-      maxTokens,
-      maxSteps,
-      schema,
-      schemaName,
-      schemaDescription,
-      temperature,
-    } = config;
-
-    this.model = model;
-    this.instructions = instructions;
-    this.cache = cache ?? {
+    this.model = config.model;
+    this.instructions = config.instructions;
+    this.cache = config.cache ?? {
       provider: new InMemoryCache(),
       expireTime: 3600,
     };
-    this.lengthOfContext = lengthOfContext || 10;
-    this.tools = tools;
-    this.maxTokens = maxTokens || 500;
-    this.maxSteps = maxSteps || 5;
-    this.schema = schema;
-    this.schemaName = schemaName;
-    this.schemaDescription = schemaDescription;
-    this.temperature = temperature;
+    this.lengthOfContext = config.lengthOfContext || 10;
+    this.tools = config.tools;
+    this.maxTokens = config.maxTokens || 500;
+    this.maxSteps = config.maxSteps || 5;
+    this.schema = config.schema;
+    this.schemaName = config.schemaName;
+    this.schemaDescription = config.schemaDescription;
+    this.temperature = config.temperature;
     this.setupCleanup();
   }
 
