@@ -2,41 +2,12 @@ import { generateText, generateObject } from "ai";
 import { InMemoryCache, type Cache } from "./cache/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage } from "ai";
-import type { OpenAIChatModelId } from "./types/OpenAIResponsesModelId";
+import type {
+  AIResponderConfig,
+  GenerateObjectOptions,
+  OpenAIChatModelId,
+} from "./types/index";
 import Redis from "ioredis";
-import type { ZodType, ZodTypeDef } from "zod";
-
-/**
- * Configuration interface for AIResponder
- */
-export interface AIResponderConfig {
-  /** The AI model identifier to use for responses */
-  model: OpenAIChatModelId;
-  /** System instructions for the AI model */
-  instructions: string;
-  /** Optional set of tools for the AI to use */
-  tools?: ToolSet;
-  /** Cache configuration for session management */
-  cache?: {
-    /** Cache provider instance */
-    provider: Cache | Redis;
-    /** Expiration time in seconds for cached items */
-    expireTime?: number;
-  };
-  /** Optional number of messages in AI context */
-  lengthOfContext?: number;
-  /** Optional maximum number of tokens to generate in a response */
-  maxTokens?: number;
-  /** Optional maximum number of steps to take in a response */
-  maxSteps?: number;
-  /** Schema of the object that the model should generate */
-  schema?: ZodType<unknown, ZodTypeDef, unknown>;
-  /** Optional schema name */
-  schemaName?: string;
-  /** Description of the schema */
-  schemaDescription?: string;
-  temperature?: number;
-}
 
 /**
  * AIResponder class for handling AI responses with caching and error handling.
@@ -49,20 +20,14 @@ export class AIResponderV1 {
   /** System instructions for the AI model */
   protected instructions: string;
   /** Cache configuration and provider */
-  protected cache?: {
+  protected cache: {
     provider: Cache | Redis;
-    expireTime?: number;
+    expireTime: number;
   };
   /** Optional set of tools for the AI to use */
   protected tools?: ToolSet;
   /** Optional number of messages in AI context */
   protected lengthOfContext?: number;
-  /** Schema for structured object generation */
-  protected schema?: ZodType<unknown, ZodTypeDef, unknown>;
-  /** Optional schema name */
-  protected schemaName?: string;
-  /** Optional schema description */
-  protected schemaDescription?: string;
   /** Maximum number of tokens to generate */
   protected maxTokens?: number;
   /** Maximum number of steps to generate */
@@ -81,15 +46,12 @@ export class AIResponderV1 {
     this.instructions = config.instructions;
     this.cache = config.cache ?? {
       provider: new InMemoryCache(),
-      expireTime: 3600,
+      expireTime: 3600, // Default expiration time of 1 hour
     };
     this.lengthOfContext = config.lengthOfContext || 10;
     this.tools = config.tools;
     this.maxTokens = config.maxTokens || 500;
     this.maxSteps = config.maxSteps || 5;
-    this.schema = config.schema;
-    this.schemaName = config.schemaName;
-    this.schemaDescription = config.schemaDescription;
     this.temperature = config.temperature;
     this.setupCleanup();
   }
@@ -102,76 +64,76 @@ export class AIResponderV1 {
    * @returns Promise resolving to the AI response object
    * @throws Will throw an error if AI response fails
    */
-  async getContextResponse(userId: string, prompt: string) {
-    const sessionKey = `session:${userId}`;
-    let messages: CoreMessage[] = [];
+  async getContextResponse(
+    userId: string,
+    prompt: string,
+    options: {
+      memory: true;
+    },
+  ) {
+    if (options.memory) {
+      const sessionKey = `session:${userId}`;
+      let messages: CoreMessage[] = [];
 
-    try {
-      messages = JSON.parse(
-        (await this.cache!.provider.get(sessionKey)) || "[]",
-      );
-    } catch {
-      messages = [];
-    }
+      try {
+        messages = JSON.parse(
+          (await this.cache!.provider.get(sessionKey)) || "[]",
+        );
+      } catch {
+        messages = [];
+      }
 
-    messages.push({ role: "user", content: prompt });
+      messages.push({ role: "user", content: prompt });
 
-    try {
-      const response = await generateText({
-        model: openai(this.model),
-        system: this.instructions,
-        tools: this.tools,
-        messages,
-        maxTokens: this.maxTokens,
-        maxSteps: this.maxSteps,
-        temperature: this.temperature,
-      });
+      try {
+        const response = await generateText({
+          model: openai(this.model),
+          system: this.instructions,
+          tools: this.tools,
+          messages,
+          maxTokens: this.maxTokens,
+          maxSteps: this.maxSteps,
+          temperature: this.temperature,
+        });
 
-      // Добавляем ВСЕ сообщения из ответа (включая tool)
-      messages.push(...response.response.messages);
+        // Добавляем ВСЕ сообщения из ответа (включая tool)
+        messages.push(...response.response.messages);
 
-      // Безопасная обрезка с сохранением tool-пар
-      messages = this.trimMessagesToolsPairsSafety(
-        messages,
-        this.lengthOfContext ?? 10,
-      );
+        // Безопасная обрезка с сохранением tool-пар
+        messages = this.trimMessagesToolsPairsSafety(
+          messages,
+          this.lengthOfContext ?? 10,
+        );
 
-      await this.cache!.provider.set(
-        sessionKey,
-        JSON.stringify(messages),
-        "EX",
-        this.cache?.expireTime || 3600,
-      );
+        await this.cache!.provider.set(
+          sessionKey,
+          JSON.stringify(messages),
+          "EX",
+          this.cache?.expireTime || 3600,
+        );
 
-      return response;
-    } catch (error) {
-      this.errorHandler?.("error", `Failed to get response from AI`);
-      throw error;
-    }
-  }
+        return response;
+      } catch (error) {
+        this.errorHandler?.("error", `Failed to get response from AI`);
+        throw error;
+      }
+    } else {
+      try {
+        const response = await generateText({
+          model: openai(this.model),
+          system: this.instructions,
+          tools: this.tools,
+          prompt,
+          maxTokens: this.maxTokens,
+          maxSteps: this.maxSteps,
+          temperature: this.temperature,
+        });
 
-  /**
-   * Gets a once response without context from the AI model.
-   * Maintains conversation context using session-based caching.
-   * @param prompt - User's input prompt
-   * @returns Promise resolving to the AI response object
-   * @throws Will throw an error if AI response fails
-   */
-  async getOnceResponse(prompt: string) {
-    try {
-      const response = await generateText({
-        model: openai(this.model),
-        system: this.instructions,
-        tools: this.tools,
-        prompt: prompt,
-        maxTokens: this.maxTokens,
-        maxSteps: this.maxSteps,
-        temperature: this.temperature,
-      });
-      return response;
-    } catch (error) {
-      this.errorHandler?.("error", `Failed to get response from AI`);
-      throw error;
+        return response;
+      } catch (error) {
+        this.errorHandler?.("error", `Failed to get response from AI`);
+        throw error;
+      }
     }
   }
 
@@ -183,7 +145,11 @@ export class AIResponderV1 {
    * @returns Promise resolving to the AI response object
    * @throws Will throw an error if AI response fails
    */
-  async getStructuredObject(userId: string, prompt: string) {
+  async getStructuredObject(
+    userId: string,
+    prompt: string,
+    options: GenerateObjectOptions,
+  ) {
     const sessionKey = `session:${userId}`;
     let messages: CoreMessage[] = [];
 
@@ -203,9 +169,9 @@ export class AIResponderV1 {
         system: this.instructions,
         messages,
         maxTokens: this.maxTokens,
-        schemaName: this.schemaName,
-        schemaDescription: this.schemaDescription,
-        schema: this.schema as any, // Cast to any to bypass type checking
+        schemaName: options.schemaName,
+        schemaDescription: options.schemaDescription,
+        schema: options.schema as any, // Cast to any to bypass type checking
         temperature: this.temperature,
       });
 
