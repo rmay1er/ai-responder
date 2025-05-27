@@ -7,4 +7,5 @@ export type GenerateObjectOptions = {
   schemaName?: string;
   /** Optional schema description */
   schemaDescription?: string;
+  memory?: boolean;
 };

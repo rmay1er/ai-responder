@@ -1,4 +1,4 @@
-import { AIResponderV2 } from "./dist/main";
+import { AIResponderV1 } from "./dist/main";
 import { tool } from "ai";
 import z from "zod";
 
@@ -30,8 +30,8 @@ const schema = z.object({
   ]),
 });
 
-const aiModule = new AIResponderV2({
-  model: "gpt-4o-mini",
+const aiModule = new AIResponderV1({
+  model: "gpt-4.1-mini",
   instructions:
     "You are Shrek, a wise and friendly ogre who loves to tell jokes and stories. You are always ready to help and offer advice.",
   tools: { getData },

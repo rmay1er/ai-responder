@@ -150,6 +150,25 @@ export class AIResponderV1 {
     prompt: string,
     options: GenerateObjectOptions,
   ) {
+    if (options.memory === false) {
+      try {
+        const response = await generateObject({
+          model: openai(this.model),
+          system: this.instructions,
+          prompt,
+          maxTokens: this.maxTokens,
+          schemaName: options.schemaName,
+          schemaDescription: options.schemaDescription,
+          schema: options.schema as any, // Cast to any to bypass type checking
+          temperature: this.temperature,
+        });
+
+        return response;
+      } catch (error) {
+        this.errorHandler?.("error", `Failed to get response from AI`);
+        throw error;
+      }
+    }
     const sessionKey = `session:${userId}`;
     let messages: CoreMessage[] = [];
 
