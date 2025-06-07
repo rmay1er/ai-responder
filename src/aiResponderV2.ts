@@ -44,6 +44,7 @@ export class AIResponderV2 extends AIResponderV1 {
         tools: this.tools,
         prompt: prompt,
         maxTokens: this.maxTokens,
+        temperature: this.temperature,
         maxSteps: this.maxSteps,
       };
 
@@ -108,6 +109,7 @@ export class AIResponderV2 extends AIResponderV1 {
         schemaName: options.schemaName,
         schemaDescription: options.schemaDescription,
         prompt: prompt,
+        temperature: this.temperature,
         maxTokens: this.maxTokens,
         maxSteps: this.maxSteps,
       };
