@@ -67,11 +67,11 @@ export class AIResponderV1 {
   async getContextResponse(
     userId: string,
     prompt: string,
-    options: {
-      memory: true;
-    },
+    options?: { memory?: boolean },
   ) {
-    if (options.memory) {
+    const useMemory = options?.memory !== false; // По умолчанию всегда true, если явно не false
+
+    if (useMemory) {
       const sessionKey = `session:${userId}`;
       let messages: CoreMessage[] = [];
 
