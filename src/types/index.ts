@@ -1,5 +1,3 @@
-import type { AIResponderConfig } from "./AIResponderConfig";
-import type { GenerateObjectOptions } from "./GenerateObjectOptions";
-import type { OpenAIChatModelId } from "./OpenAIResponsesModelId";
-
-export type { AIResponderConfig, GenerateObjectOptions, OpenAIChatModelId };
+export type { AIResponderConfig } from "./AIResponderConfig";
+export type { GenerateObjectOptions } from "./GenerateObjectOptions";
+export type { OpenAIChatModelId } from "./OpenAIResponsesModelId";

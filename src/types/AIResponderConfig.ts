@@ -28,10 +28,5 @@ export interface AIResponderConfig {
   /** Optional maximum number of steps to take in a response */
   maxSteps?: number;
   /** Schema of the object that the model should generate */
-  schema?: ZodType<unknown, ZodTypeDef, unknown>;
-  /** Optional schema name */
-  schemaName?: string;
-  /** Description of the schema */
-  schemaDescription?: string;
   temperature?: number;
 }
