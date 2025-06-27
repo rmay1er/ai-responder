@@ -1,11 +1,13 @@
 import { generateText, generateObject } from "ai";
 import { InMemoryCache, type Cache } from "./cache/InMemoryCache";
 import { openai } from "@ai-sdk/openai";
-import type { ToolSet, CoreMessage } from "ai";
+import type { ToolSet, CoreMessage, Tool } from "ai";
+import { z } from "zod";
 import type {
   AIResponderConfig,
   GenerateObjectOptions,
   OpenAIChatModelId,
+  AsToolConfig,
 } from "./types/index";
 import Redis from "ioredis";
 
@@ -251,6 +253,26 @@ export class AIResponderV1 {
     }
 
     return messages.slice(startIndex);
+  }
+
+  public asTool(config: AsToolConfig): Tool {
+    return {
+      description: config.description,
+      parameters: z.object({
+        question: z.string(),
+      }),
+
+      execute: async ({ question }) => {
+        if (config.function) {
+          config.function(question);
+        }
+        const response = await this.getContextResponse(
+          `${config.name}`,
+          question,
+        );
+        return response.text;
+      },
+    };
   }
 
   /**
