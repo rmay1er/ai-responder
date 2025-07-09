@@ -1,13 +1,12 @@
 import { generateText, generateObject } from "ai";
 import { InMemoryCache, type Cache } from "./cache/InMemoryCache";
-import { openai } from "@ai-sdk/openai";
 import type { ToolSet, CoreMessage, Tool } from "ai";
 import { z } from "zod";
 import type {
   AIResponderConfig,
   GenerateObjectOptions,
-  OpenAIChatModelId,
   AsToolConfig,
+  ExOpenAIProvider,
 } from "./types/index";
 import Redis from "ioredis";
 
@@ -18,7 +17,7 @@ import Redis from "ioredis";
  */
 export class AIResponderV1 {
   /** The AI model identifier being used */
-  public model: OpenAIChatModelId;
+  public model: ExOpenAIProvider;
   /** System instructions for the AI model */
   protected instructions: string;
   /** Cache configuration and provider */
@@ -89,7 +88,7 @@ export class AIResponderV1 {
 
       try {
         const response = await generateText({
-          model: openai(this.model),
+          model: this.model(this.model.modelId),
           system: this.instructions,
           tools: this.tools,
           messages,
@@ -122,7 +121,7 @@ export class AIResponderV1 {
     } else {
       try {
         const response = await generateText({
-          model: openai(this.model),
+          model: this.model(this.model.modelId),
           system: this.instructions,
           tools: this.tools,
           prompt,
@@ -155,7 +154,7 @@ export class AIResponderV1 {
     if (options.memory === false) {
       try {
         const response = await generateObject({
-          model: openai(this.model),
+          model: this.model(this.model.modelId),
           system: this.instructions,
           prompt,
           maxTokens: this.maxTokens,
@@ -186,7 +185,7 @@ export class AIResponderV1 {
 
     try {
       const response = await generateObject({
-        model: openai(this.model),
+        model: this.model(this.model.modelId),
         system: this.instructions,
         messages,
         maxTokens: this.maxTokens,

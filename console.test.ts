@@ -1,4 +1,4 @@
-import { AIResponderV1 } from "./dist/main";
+import { AIResponderV2, createOpenAI } from "./dist/main.js";
 import { tool } from "ai";
 import z from "zod";
 
@@ -31,8 +31,18 @@ const schema = z.object({
   ]),
 });
 
-const cityAgent = new AIResponderV1({
-  model: "gpt-4.1-mini",
+const openai = createOpenAI({
+  modelId: "gpt-4.1-mini",
+  fetch: (url, init) => {
+    return fetch(url, {
+      ...init,
+      proxy: "http://ruslan:vrt12spe@185.147.127.142:3128",
+    });
+  },
+});
+
+const cityAgent = new AIResponderV2({
+  model: openai,
   instructions: "Ты ИИ-агент, знаток гоородов",
   tools: { getData },
 }).asTool({
@@ -42,13 +52,14 @@ const cityAgent = new AIResponderV1({
     console.log("ИИ агент запросил информацию о городе" + question),
 });
 
-const main = new AIResponderV1({
-  model: "gpt-4.1-mini",
+const main = new AIResponderV2({
+  model: openai,
   instructions: "Ты TeamLead и у тебя в подчинении есть ИИ-агенты.",
   tools: { cityAgent },
 });
 
 for await (let line of console) {
+  console.log(openai.modelId);
   const response = await main.getContextResponse("console_session", line);
   const data = response.steps.flatMap((step) => {
     return { toolCall: step.toolCalls, toolRes: step.toolResults };

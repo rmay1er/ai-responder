@@ -1,6 +1,5 @@
-import type { ZodType, ZodTypeDef } from "zod";
 import type { ToolSet } from "ai";
-import type { OpenAIChatModelId } from "./OpenAIResponsesModelId";
+import type { ExOpenAIProvider } from "./index";
 import Redis from "ioredis";
 import type { Cache } from "../cache/InMemoryCache";
 
@@ -9,7 +8,7 @@ import type { Cache } from "../cache/InMemoryCache";
  */
 export interface AIResponderConfig {
   /** The AI model identifier to use for responses */
-  model: OpenAIChatModelId;
+  model: ExOpenAIProvider;
   /** System instructions for the AI model */
   instructions: string;
   /** Optional set of tools for the AI to use */
