@@ -36,7 +36,7 @@ const openai = createOpenAI({
   fetch: (url, init) => {
     return fetch(url, {
       ...init,
-      proxy: "http://ruslan:vrt12spe@185.147.127.142:3128",
+      proxy: "",
     });
   },
 });
