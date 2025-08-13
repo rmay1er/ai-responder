@@ -1,7 +1,7 @@
 import { createOpenAI as cr } from "@ai-sdk/openai";
 import type { ExOpenAIProvider, ExOpenAIProviderSettings } from "./types/index";
 
-function createOpenAI(
+function createOpenAIProvider(
   options: ExOpenAIProviderSettings,
 ): ExOpenAIProvider & { modelId: string } {
   const provider = cr(options);
@@ -10,4 +10,4 @@ function createOpenAI(
   return provider as ExOpenAIProvider;
 }
 
-export { createOpenAI };
+export { createOpenAIProvider };

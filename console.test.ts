@@ -1,4 +1,4 @@
-import { AIResponderV2, createOpenAiProvider } from "./dist/main.js";
+import { AIResponderV2, createOpenAIProvider } from "./dist/main.js";
 import { tool } from "ai";
 import z from "zod";
 
@@ -31,7 +31,7 @@ const schema = z.object({
   ]),
 });
 
-const openai = createOpenAiProvider({
+const openai = createOpenAIProvider({
   modelId: "gpt-4.1-mini",
   fetch: (url, init) => {
     return fetch(url, {
