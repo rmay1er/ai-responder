@@ -1,16 +1,16 @@
 # AI Responder Library
 
-**Build Production-Ready AI Agents in Minutes**
-⚡ Zero-config TypeScript library with enterprise-grade conversation management and extensible tool integrations
+**Build Production-Ready AI Agents with Built-in Memory and Chained Tool Support**
+⚡ Zero-config TypeScript library featuring automatic context memory and the ability to create chains of AI tool calls seamlessly
 
 ## Why Choose This Library?
 
-- 🚀 **3-Line Agent Setup** - Spin up intelligent AI agents in under 30 seconds
+- 🚀 **3-Line Agent Setup with Automatic Memory** - Spin up intelligent AI agents that remember conversation context without any manual memory management
 - 🔐 **Secure API Handling** - Automatic environment variable integration with robust error handling
-- 🧩 **Context-Aware Dialog** - Advanced conversation management with safe message trimming
-- 🔄 **Flexible Memory Modes** - Support for session-based memory or stateless, one-off queries
+- 🧩 **Context-Aware Dialog** - Built-in memory enables agents to maintain rich, multi-turn conversations seamlessly
+- 🔄 **Effortless Tool Chaining** - Create AI agents that act as tools themselves, enabling complex chains of AI-driven workflows
 - 🛡️ **Battle-Tested** - Built-in retry logic, Redis caching, and graceful shutdown mechanisms
-- 🛠️ **Extensible Tool Support** - Incorporate external APIs and custom tools within dialogs
+- 🛠️ **Extensible Tool Support** - Easily pass AI agents as tools to other agents for chaining calls and building sophisticated AI pipelines
 - 📦 **MIT Licensed** - Fully open source for commercial use and customization
 
 ## Quick Start
@@ -32,23 +32,53 @@ OPENAI_API_KEY=your-key-here
 
 ### 3. Create First Agent
 ```typescript
-import { AIResponderV1 } from 'ai-responder';
+import { AIResponderV1, AIResponderV2 } from 'ai-responder';
 import 'dotenv/config'; // Node.js only - Bun auto-loads .env
+import { createOpenAiProvider } from "ai-responder";
 
+// Create OpenAI provider first, set the model there
+// Also you can pass API key directly if not using .env
+const openaiProvider = createOpenAiProvider({
+  modelId: "gpt-4.1-mini"
+});
+
+// Then create the AIResponderV1 agent with the provider, include InMemoryChache like array of messages
 const supportBot = new AIResponderV1({
-  model: 'gpt-4o', // Official OpenAI model ID
+  provider: openaiProvider, // Official OpenAI model ID
   instructions: 'Friendly customer support assistant'
 });
 
-// Start conversing with full context support
-const response = await supportBot.getContextResponse('user-789', 'Hi!');
+// Or create the AIResponderV2 agent with the provider, include InMemoryChache for messages id's (using openai.response API)
+const managerBot = new AIResponderV2({
+  provider: openaiProvider,
+  instructions: "Friendly manager"
+});
+
+// Start conversing with full context support and automatic memory handling
+const response = await supportBot.getContextResponse("user-789", "Hi!");
 console.log(response.text); // → "Hello! How can I assist you today?"
 
-// Or conversing without context support (once response)
-const response = await supportBot.getContextResponse('user-789', 'Hi!'. {
-  memory: false // Disable context memory for this query
+// Or conversing without context support (one-off query, no memory used)
+const responseNoMemory = await supportBot.getContextResponse("user-789", "Hi!", {
+  memory: false,
 });
-console.log(response.text); // → "Hello! How can I assist you today?"
+console.log(responseNoMemory.text); // → "Hello! How can I assist you today?"
+
+// You can also use AIResponderV1 and V2 instances as tools themselves, to build chains of AI-powered calls:
+const cityAgentTool = supportBot.asTool({
+  name: "cityAgent",
+  description: "An agent expert on cities to answer detailed questions"
+});
+// Then pass this tool to another agent to orchestrate complex interactions
+
+const managerBot = new AIResponderV2({
+  provider: openaiProvider,
+  instructions: "Friendly manager",
+  tools: {
+    cityAgentTool // Pass the support bot as a tool
+  }
+});
+
 ```
 
 ## Configuration Guide
@@ -57,7 +87,7 @@ console.log(response.text); // → "Hello! How can I assist you today?"
 // Recommended production configuration example
 const agentConfig = {
   // REQUIRED CORE SETTINGS
-  model: 'gpt-4.1-mini',  // OpenAI model version
+  provider: openaiProvider,  // OpenAI Provider
   instructions: 'Expert financial advisor',  // Defines agent tone and role
 
   // OPTIONAL SETTINGS FOR PERFORMANCE AND CONTEXT
@@ -82,38 +112,30 @@ const agentConfig = {
 | **maxSteps**      | Limits reasoning depth and iterations | `5`           |
 | **cache**         | Session storage implementation (Redis recommended) | In-memory |
 
-## Key Features
-
-### Enterprise-Grade Security and Reliability
-```typescript
-// Automatic .env environment handling for safe API key injection
-const secureAgent = new AIResponderV1({
-  model: 'gpt-4',
-  instructions: 'PCI-compliant payment assistant'
-});
-```
-
-### Intelligent and Extensible Caching
-```typescript
-// Zero-config in-memory cache for development and quick prototyping
-const devAgent = new AIResponderV1({/* config */});
-
-// Production-grade Redis cluster support with TLS encryption
-import Redis from 'ioredis';
-const prodAgent = new AIResponderV1({
-  cache: {
-    provider: new Redis({
-      host: 'redis-prod',
-      tls: { /* secure TLS config here */ }
-    }),
-    expireTime: 7200 // Sessions expire after 2 hours
-  }
-});
-```
 
 ### Tool Integration Support
 - Extend your AI assistant by adding external tools/APIs that can be invoked during conversations
 - Allows complex workflows that combine AI with actionable external data or services seamlessly
+- Easily use AIResponder agents as tools themselves to build chains of AI reasoning and workflows:
+
+```typescript
+import { createOpenAiProvider, AIResponderV1 } from "ai-responder";
+
+const openaiProvider = createOpenAiProvider({ modelId: "gpt-4" });
+
+const cityAgent = new AIResponderV1({
+  provider: openaiProvider,
+  instructions: "City expert AI agent",
+  // config...
+});
+
+const mainAgent = new AIResponderV1({
+  model: openaiProvider,
+  instructions: "Team lead agent managing city experts",
+  tools: { cityAgent },
+});
+```
+This enables creating complex sequences of AI calls by passing agents as tools inside other agents.
 
 ## Version Comparison
 
@@ -123,16 +145,6 @@ const prodAgent = new AIResponderV1({
 | **Memory Use**   | Higher memory overhead due to full message caching | Lean memory footprint by referencing prior responses |
 | **Best For**     | Agents requiring rich, detailed dialogues and tool interop | High-volume, low-latency APIs and batch processing |
 | **Setup**        | Automatic and simple initialization | Automatic, with streamlined context chaining |
-
-```typescript
-// V2: High-speed, low-memory query agent example
-const fastAgent = new AIResponderV2({
-  model: 'gpt-4-turbo',
-  instructions: 'High-speed query resolver'
-});
-```
-
-## Production Essentials
 
 ### Real-Time Monitoring & Error Handling
 ```typescript
@@ -149,6 +161,7 @@ agent.catchErrors((eventType, details) => {
 import Redis from 'ioredis';
 
 const clusterAgent = new AIResponderV1({
+  // In memory chache by default, but can be configured to use Redis
   cache: {
     provider: new Redis({
       host: 'redis-cluster',
