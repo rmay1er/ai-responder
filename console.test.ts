@@ -1,4 +1,4 @@
-import { AIResponderV2, createOpenAI } from "./dist/main.js";
+import { AIResponderV2, createOpenAiProvider } from "./dist/main.js";
 import { tool } from "ai";
 import z from "zod";
 
@@ -31,7 +31,7 @@ const schema = z.object({
   ]),
 });
 
-const openai = createOpenAI({
+const openai = createOpenAiProvider({
   modelId: "gpt-4.1-mini",
   fetch: (url, init) => {
     return fetch(url, {
@@ -42,7 +42,7 @@ const openai = createOpenAI({
 });
 
 const cityAgent = new AIResponderV2({
-  model: openai,
+  provider: openai,
   instructions: "Ты ИИ-агент, знаток гоородов",
   tools: { getData },
 }).asTool({
@@ -53,7 +53,7 @@ const cityAgent = new AIResponderV2({
 });
 
 const main = new AIResponderV2({
-  model: openai,
+  provider: openai,
   instructions: "Ты TeamLead и у тебя в подчинении есть ИИ-агенты.",
   tools: { cityAgent },
 });
