@@ -81,6 +81,33 @@ const managerBot = new AIResponderV2({
 
 ```
 
+### 4. Using `getStructuredObject` with Zod Schemas
+
+The `getStructuredObject` method allows you to get structured responses from the AI by defining a Zod schema for the expected object. This is especially useful when you want to enforce the shape of the response, making it easier to validate and work with.
+
+Example usage with Zod schema:
+
+```typescript
+import { z } from "zod";
+
+const userProfileSchema = z.object({
+  name: z.string(),
+  age: z.number().min(0),
+  email: z.string().email(),
+});
+
+// Usage with AIResponderV1
+const userProfileResponse = await supportBot.getStructuredObject("user-789",
+  "Please provide the user profile info.", {
+  schemaName: "UserProfile",
+  schemaDescription: "A profile object containing name, age, and email",
+  schema: userProfileSchema,
+});
+
+```
+
+This ensures your model returns data matching the expected structure, reducing errors and improving integration reliability.
+
 ## Configuration Guide
 
 ```typescript
