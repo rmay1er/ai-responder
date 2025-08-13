@@ -16,8 +16,8 @@ import Redis from "ioredis";
  * with built-in session management and tool response formatting.
  */
 export class AIResponderV1 {
-  /** The AI model identifier being used */
-  public model: ExOpenAIProvider;
+  /** The AI provider identifier being used */
+  public provider: ExOpenAIProvider;
   /** System instructions for the AI model */
   protected instructions: string;
   /** Cache configuration and provider */
@@ -43,7 +43,7 @@ export class AIResponderV1 {
    * @param config - Configuration object for the responder
    */
   constructor(config: AIResponderConfig) {
-    this.model = config.model;
+    this.provider = config.provider;
     this.instructions = config.instructions;
     this.cache = config.cache ?? {
       provider: new InMemoryCache(),
@@ -88,7 +88,7 @@ export class AIResponderV1 {
 
       try {
         const response = await generateText({
-          model: this.model(this.model.modelId),
+          model: this.provider(this.provider.modelId),
           system: this.instructions,
           tools: this.tools,
           messages,
@@ -121,7 +121,7 @@ export class AIResponderV1 {
     } else {
       try {
         const response = await generateText({
-          model: this.model(this.model.modelId),
+          model: this.provider(this.provider.modelId),
           system: this.instructions,
           tools: this.tools,
           prompt,
@@ -154,7 +154,7 @@ export class AIResponderV1 {
     if (options.memory === false) {
       try {
         const response = await generateObject({
-          model: this.model(this.model.modelId),
+          model: this.provider(this.provider.modelId),
           system: this.instructions,
           prompt,
           maxTokens: this.maxTokens,
@@ -185,7 +185,7 @@ export class AIResponderV1 {
 
     try {
       const response = await generateObject({
-        model: this.model(this.model.modelId),
+        model: this.provider(this.provider.modelId),
         system: this.instructions,
         messages,
         maxTokens: this.maxTokens,

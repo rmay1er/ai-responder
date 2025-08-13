@@ -8,7 +8,7 @@ import type { Cache } from "../cache/InMemoryCache";
  */
 export interface AIResponderConfig {
   /** The AI model identifier to use for responses */
-  model: ExOpenAIProvider;
+  provider: ExOpenAIProvider;
   /** System instructions for the AI model */
   instructions: string;
   /** Optional set of tools for the AI to use */

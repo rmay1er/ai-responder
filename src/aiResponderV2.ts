@@ -39,7 +39,7 @@ export class AIResponderV2 extends AIResponderV1 {
 
     try {
       const generateTextParams: any = {
-        model: this.model.responses(this.model.modelId),
+        model: this.provider.responses(this.provider.modelId),
         system: this.instructions,
         tools: this.tools,
         prompt: prompt,
@@ -102,7 +102,7 @@ export class AIResponderV2 extends AIResponderV1 {
 
     try {
       const generateObjectParams: any = {
-        model: this.model.responses(this.model.modelId),
+        model: this.provider.responses(this.provider.modelId),
         system: this.instructions,
         tools: this.tools,
         prompt: prompt,
